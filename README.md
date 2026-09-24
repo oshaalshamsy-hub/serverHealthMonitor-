@@ -1,1844 +1,834 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+from pathlib import Path
+import textwrap, zipfile, json
 
-<title>ServerHealthMonitor2</title>
+base = Path("/mnt/data/ServerHealthMonitoring_Streamlit")
+base.mkdir(exist_ok=True)
 
+app = r'''import streamlit as st
+import psutil
+import platform
+import socket
+from datetime import datetime
+from pathlib import Path
+
+# =========================================================
+# PAGE SETUP
+# =========================================================
+
+st.set_page_config(
+    page_title="SERVERHub | Server Health Monitoring",
+    page_icon="🖥️",
+    layout="wide"
+)
+
+# =========================================================
+# SESSION STATE
+# =========================================================
+
+pages = [
+    "🏠 Dashboard",
+    "ℹ️ System Info",
+    "⚙️ CPU Monitor",
+    "🧠 RAM Monitor",
+    "💾 Disk Monitor",
+    "🌐 Network Monitor",
+    "📋 Processes",
+    "💻 Operating Systems",
+    "⚠️ Alerts",
+    "📄 Reports",
+    "🛠️ Admin Control"
+]
+
+if "page" not in st.session_state:
+    st.session_state.page = "🏠 Dashboard"
+
+if "site_name" not in st.session_state:
+    st.session_state.site_name = "ServerHealthMonitoring"
+
+if "cpu_warning" not in st.session_state:
+    st.session_state.cpu_warning = 70
+
+if "ram_warning" not in st.session_state:
+    st.session_state.ram_warning = 70
+
+if "disk_warning" not in st.session_state:
+    st.session_state.disk_warning = 80
+
+def go_to(page):
+    st.session_state.page = page
+
+def find_project_logo():
+    preferred = [
+        "serverhub_logo.png",
+        "serverhub_logo.jpg",
+        "serverhub_logo.jpeg",
+        "logo.png",
+        "logo.jpg"
+    ]
+
+    for filename in preferred:
+        if Path(filename).exists():
+            return filename
+
+    return None
+
+# =========================================================
+# HELPERS
+# =========================================================
+
+def get_ip():
+    try:
+        hostname = socket.gethostname()
+        return socket.gethostbyname(hostname)
+    except Exception:
+        return "Unavailable"
+
+def get_status(value, warning, critical=90):
+    if value >= critical:
+        return "CRITICAL"
+    if value >= warning:
+        return "WARNING"
+    return "HEALTHY"
+
+def status_message(name, value, warning, critical=90):
+    status = get_status(value, warning, critical)
+
+    if status == "CRITICAL":
+        st.error(f"🔴 {name}: {value}% — CRITICAL")
+    elif status == "WARNING":
+        st.warning(f"🟠 {name}: {value}% — WARNING")
+    else:
+        st.success(f"🟢 {name}: {value}% — HEALTHY")
+
+def hero(title, subtitle):
+    st.markdown(
+        f"""
+        <div class="hero">
+            <div class="hero-company">SERVERHUB • SERVER HEALTH MONITORING</div>
+            <div class="hero-title">{title}</div>
+            <div class="hero-subtitle">{subtitle}</div>
+            <div class="hero-tags">
+                ⚙️ CPU &nbsp;&nbsp;
+                🧠 RAM &nbsp;&nbsp;
+                💾 Disk &nbsp;&nbsp;
+                🌐 Network &nbsp;&nbsp;
+                ⚠️ Alerts
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+def card(icon, title, text, color):
+    st.markdown(
+        f"""
+        <div class="card {color}">
+            <div class="card-title">{icon} {title}</div>
+            <div class="card-text">{text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# =========================================================
+# DESIGN
+# =========================================================
+
+st.markdown("""
 <style>
 
-*{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
+/* MAIN */
+.stApp {
+    background:
+        radial-gradient(circle at 88% 10%, rgba(59,130,246,.20), transparent 25%),
+        radial-gradient(circle at 70% 80%, rgba(34,197,94,.12), transparent 30%),
+        linear-gradient(135deg, #f8fbff 0%, #eef5ff 50%, #f8fafc 100%);
 }
 
-:root{
-    --bg:#0f172a;
-    --sidebar:#111827;
-    --card:#1e293b;
-    --text:#ffffff;
-    --muted:#94a3b8;
-    --border:#334155;
-    --accent:#2563eb;
-    --green:#22c55e;
-    --orange:#f59e0b;
-    --red:#ef4444;
+.block-container {
+    padding-top: 1.3rem;
+    padding-bottom: 3rem;
+    max-width: 1250px;
+    animation: fadeUp .55s ease;
 }
 
-body{
-    font-family:Arial, sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    min-height:100vh;
+/* SIDEBAR */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #eaf3ff 0%, #eef2ff 50%, #f8fafc 100%);
+    border-right: 1px solid #dbeafe;
 }
 
-body.light{
-    --bg:#f1f5f9;
-    --sidebar:#e2e8f0;
-    --card:#ffffff;
-    --text:#0f172a;
-    --muted:#64748b;
-    --border:#cbd5e1;
+section[data-testid="stSidebar"] img {
+    background: white;
+    padding: 8px;
+    border-radius: 18px;
+    box-shadow: 0 8px 22px rgba(15,46,90,.10);
 }
 
-body.green{
-    --accent:#16a34a;
+/* TITLES */
+h1, h2, h3 {
+    color: #102a56;
 }
 
-body.purple{
-    --accent:#7c3aed;
+/* BUTTONS */
+.stButton > button {
+    width: 100%;
+    min-height: 46px;
+    border: 0;
+    border-radius: 14px;
+    color: white;
+    font-weight: 700;
+    background: linear-gradient(90deg, #1677ff, #2563eb);
+    box-shadow: 0 7px 18px rgba(37,99,235,.22);
+    transition: transform .25s ease, box-shadow .25s ease;
 }
 
-
-/* =========================
-   LAYOUT
-========================= */
-
-.layout{
-    display:flex;
-    min-height:100vh;
+.stButton > button:hover {
+    color: white;
+    transform: translateY(-4px);
+    box-shadow: 0 13px 27px rgba(37,99,235,.32);
 }
 
-
-/* =========================
-   SIDEBAR
-========================= */
-
-.sidebar{
-    width:240px;
-    background:var(--sidebar);
-    padding:22px 15px;
-    position:fixed;
-    top:0;
-    bottom:0;
-    left:0;
-    overflow-y:auto;
+/* METRICS */
+div[data-testid="stMetric"] {
+    background: rgba(255,255,255,.92);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 27px rgba(30,64,175,.12);
+    transition: all .25s ease;
 }
 
-.logo{
-    font-size:28px;
-    font-weight:bold;
-    margin-bottom:4px;
+div[data-testid="stMetric"]:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 17px 35px rgba(37,99,235,.20);
 }
 
-.logo span{
-    color:#3b82f6;
+div[data-testid="stAlert"] {
+    border-radius: 17px;
 }
 
-.logo-sub{
-    color:var(--muted);
-    font-size:11px;
-    margin-bottom:25px;
+/* HERO */
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    border-radius: 25px;
+    background:
+        radial-gradient(circle at 88% 25%, rgba(59,130,246,.75), transparent 27%),
+        linear-gradient(115deg, #071b46 0%, #123d85 58%, #2563eb 100%);
+    box-shadow: 0 16px 38px rgba(30,64,175,.25);
 }
 
-.menu-title{
-    color:var(--muted);
-    font-size:11px;
-    font-weight:bold;
-    margin-bottom:10px;
+.hero::before {
+    content: "";
+    position: absolute;
+    width: 230px;
+    height: 230px;
+    border-radius: 50%;
+    right: -65px;
+    bottom: -140px;
+    background: rgba(255,255,255,.11);
 }
 
-.sidebar button{
-    width:100%;
-    border:none;
-    background:transparent;
-    color:var(--text);
-    padding:12px 14px;
-    margin-bottom:6px;
-    text-align:left;
-    border-radius:10px;
-    cursor:pointer;
-    font-size:14px;
+.hero::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    right: 70px;
+    top: -60px;
+    background: rgba(255,255,255,.08);
 }
 
-.sidebar button:hover{
-    background:var(--accent);
-    color:white;
+.hero-company {
+    color: #bfdbfe;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
 
-.admin-button{
-    margin-top:18px !important;
-    border:1px solid var(--border) !important;
+.hero-title {
+    color: white;
+    font-size: 40px;
+    line-height: 1.15;
+    font-weight: 800;
+    margin-top: 8px;
 }
 
-
-/* =========================
-   MAIN
-========================= */
-
-.main{
-    margin-left:240px;
-    width:calc(100% - 240px);
+.hero-subtitle {
+    color: #dbeafe;
+    font-size: 19px;
+    margin-top: 8px;
 }
 
-.topbar{
-    background:var(--card);
-    padding:20px 30px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid var(--border);
+.hero-tags {
+    color: #bfdbfe;
+    font-size: 14px;
+    margin-top: 22px;
 }
 
-.topbar h1{
-    font-size:25px;
+/* CARDS */
+.card {
+    background: rgba(255,255,255,.84);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 20px;
+    padding: 21px;
+    min-height: 145px;
+    margin-bottom: 15px;
+    box-shadow: 0 8px 24px rgba(15,46,90,.09);
+    transition: all .25s ease;
 }
 
-.topbar p{
-    color:var(--muted);
-    font-size:12px;
-    margin-top:5px;
+.card:hover {
+    transform: translateY(-7px) scale(1.01);
+    box-shadow: 0 16px 32px rgba(37,99,235,.17);
 }
 
-.refresh-btn{
-    background:var(--accent);
-    border:none;
-    color:white;
-    padding:11px 20px;
-    border-radius:9px;
-    cursor:pointer;
+.card-blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+.card-green { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+.card-purple { background: linear-gradient(135deg, #f5f3ff, #ede9fe); }
+.card-orange { background: linear-gradient(135deg, #fff7ed, #ffedd5); }
+.card-pink { background: linear-gradient(135deg, #fff1f2, #fce7f3); }
+.card-cyan { background: linear-gradient(135deg, #ecfeff, #cffafe); }
+
+.card-title {
+    color: #102a56;
+    font-size: 19px;
+    font-weight: 800;
+    margin-bottom: 8px;
 }
 
-
-/* =========================
-   PAGES
-========================= */
-
-.page{
-    display:none;
-    padding:30px;
+.card-text {
+    color: #475569;
+    font-size: 15px;
+    line-height: 1.55;
 }
 
-.page.active{
-    display:block;
+.footer-box {
+    margin-top: 25px;
+    padding: 22px;
+    border-radius: 20px;
+    color: white;
+    background: linear-gradient(100deg, #102a56, #164e9c, #2563eb);
+    box-shadow: 0 10px 25px rgba(30,64,175,.18);
 }
 
-.page-title{
-    margin-bottom:25px;
-}
-
-.page-title p{
-    color:var(--muted);
-    margin-top:5px;
-}
-
-
-/* =========================
-   CARDS
-========================= */
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:18px;
-}
-
-.card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:22px;
-}
-
-.card-title{
-    color:var(--muted);
-    font-size:14px;
-}
-
-.card-value{
-    font-size:36px;
-    font-weight:bold;
-    margin:12px 0;
-}
-
-.progress{
-    height:10px;
-    width:100%;
-    background:var(--border);
-    border-radius:20px;
-    overflow:hidden;
-    margin-bottom:10px;
-}
-
-.progress div{
-    height:100%;
-    background:var(--accent);
-    width:0%;
-    transition:0.4s;
-}
-
-.details{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:18px;
-    margin-top:18px;
-}
-
-.detail{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:15px;
-    padding:20px;
-}
-
-.detail h3{
-    color:var(--muted);
-    font-size:14px;
-    margin-bottom:10px;
-}
-
-
-/* =========================
-   STATUS
-========================= */
-
-.healthy{
-    color:var(--green);
-    font-weight:bold;
-}
-
-.warning{
-    color:var(--orange);
-    font-weight:bold;
-}
-
-.critical{
-    color:var(--red);
-    font-weight:bold;
-}
-
-
-/* =========================
-   INFO
-========================= */
-
-.info-box{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:25px;
-    margin-top:20px;
-}
-
-.info-box p{
-    padding:12px 0;
-    border-bottom:1px solid var(--border);
-}
-
-.info-box p:last-child{
-    border:none;
-}
-
-
-/* =========================
-   BIG MONITOR
-========================= */
-
-.big-monitor{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:18px;
-    padding:40px;
-    max-width:600px;
-    text-align:center;
-    margin-top:20px;
-}
-
-.big-monitor h1{
-    font-size:75px;
-    color:var(--accent);
-}
-
-
-/* =========================
-   OS
-========================= */
-
-.os-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:15px;
-    margin-top:20px;
-}
-
-.os-box{
-    background:var(--card);
-    border:1px solid var(--border);
-    padding:25px;
-    border-radius:15px;
-    text-align:center;
-    font-weight:bold;
-}
-
-
-/* =========================
-   PROCESSES
-========================= */
-
-.process-item{
-    background:var(--card);
-    border:1px solid var(--border);
-    padding:13px 15px;
-    margin-bottom:8px;
-    border-radius:10px;
-    display:flex;
-    justify-content:space-between;
-}
-
-.process-item span{
-    color:var(--muted);
-}
-
-
-/* =========================
-   ADMIN
-========================= */
-
-.admin-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:18px;
-    margin-top:20px;
-}
-
-.admin-card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:25px;
-}
-
-.admin-card label{
-    display:block;
-    margin-top:15px;
-    margin-bottom:6px;
-}
-
-.admin-card input,
-.admin-card select{
-    width:100%;
-    padding:11px;
-    border-radius:8px;
-    border:1px solid var(--border);
-    background:var(--bg);
-    color:var(--text);
-}
-
-.feature-list{
-    margin-top:15px;
-}
-
-.feature-list label{
-    padding:10px;
-    border:1px solid var(--border);
-    border-radius:8px;
-    margin-bottom:8px;
-}
-
-.feature-list input{
-    width:auto;
-    margin-right:8px;
-}
-
-.save-btn{
-    background:var(--accent);
-    color:white;
-    border:none;
-    padding:13px 24px;
-    border-radius:10px;
-    cursor:pointer;
-    margin-top:20px;
-}
-
-.save-message{
-    color:var(--green);
-    margin-top:12px;
-}
-
-
-/* =========================
-   MOBILE
-========================= */
-
-@media(max-width:800px){
-
-    .layout{
-        display:block;
-    }
-
-    .sidebar{
-        position:static;
-        width:100%;
-    }
-
-    .main{
-        margin-left:0;
-        width:100%;
-    }
-
-    .cards,
-    .details{
-        grid-template-columns:1fr;
-    }
-
-    .os-grid{
-        grid-template-columns:1fr 1fr;
-    }
-
-    .admin-grid{
-        grid-template-columns:1fr;
-    }
-
-    .topbar{
-        flex-direction:column;
-        align-items:flex-start;
-        gap:12px;
-    }
-
-    .refresh-btn{
-        width:100%;
-    }
-
-    .page{
-        padding:18px;
-    }
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 </style>
-</head>
+""", unsafe_allow_html=True)
 
-<body>
+# =========================================================
+# SIDEBAR
+# =========================================================
 
-<div class="layout">
+project_logo = find_project_logo()
 
+if project_logo:
+    st.sidebar.image(project_logo, width=190)
+else:
+    st.sidebar.markdown("## 🖥️ SERVERHub")
 
-<!-- =========================
-     SIDEBAR
-========================= -->
+st.sidebar.markdown("## 🖥️ Server Console")
 
-<aside class="sidebar">
+option = st.sidebar.radio(
+    "Navigation",
+    pages,
+    index=pages.index(st.session_state.page)
+)
 
-    <div class="logo">
-        SERVER<span>Hub</span>
-    </div>
+if option != st.session_state.page:
+    st.session_state.page = option
+    st.rerun()
 
-    <div class="logo-sub">
-        Smart Server Monitoring
-    </div>
+st.sidebar.divider()
+st.sidebar.caption(st.session_state.site_name)
+st.sidebar.caption("Server Health Monitoring Project")
 
-    <div class="menu-title">
-        MONITORING
-    </div>
+# =========================================================
+# DASHBOARD
+# =========================================================
 
-    <button id="menuDashboard" onclick="showPage('dashboard')">
-        Dashboard
-    </button>
+if st.session_state.page == "🏠 Dashboard":
 
-    <button id="menuSystem" onclick="showPage('system')">
-        System Info
-    </button>
-
-    <button id="menuCPU" onclick="showPage('cpu')">
-        CPU Monitor
-    </button>
-
-    <button id="menuRAM" onclick="showPage('ram')">
-        RAM Monitor
-    </button>
-
-    <button id="menuDisk" onclick="showPage('disk')">
-        Disk Monitor
-    </button>
-
-    <button id="menuNetwork" onclick="showPage('network')">
-        Network Monitor
-    </button>
-
-    <button id="menuProcesses" onclick="showPage('processes')">
-        Processes
-    </button>
-
-    <button id="menuOS" onclick="showPage('os')">
-        Operating Systems
-    </button>
-
-    <button id="menuAlerts" onclick="showPage('alerts')">
-        Alerts
-    </button>
-
-    <button id="menuReports" onclick="showPage('reports')">
-        Reports
-    </button>
-
-    <button class="admin-button" onclick="showPage('admin')">
-        Admin Control
-    </button>
-
-</aside>
-
-
-<!-- =========================
-     MAIN
-========================= -->
-
-<main class="main">
-
-
-<header class="topbar">
-
-    <div>
-
-        <h1 id="websiteTitle">
-            ServerHealthMonitor2
-        </h1>
-
-        <p>
-            Smart Server Health & Performance Monitoring
-        </p>
-
-    </div>
-
-    <button class="refresh-btn" onclick="refreshData()">
-        Refresh
-    </button>
-
-</header>
-
-
-<!-- =========================
-     DASHBOARD
-========================= -->
-
-<section id="dashboard" class="page active">
-
-    <div class="page-title">
-
-        <h2>
-            System Dashboard
-        </h2>
-
-        <p>
-            Live system health overview
-        </p>
-
-    </div>
-
-
-    <div class="cards">
-
-
-        <div class="card">
-
-            <div class="card-title">
-                CPU Usage
-            </div>
-
-            <div id="cpuValue" class="card-value">
-                24%
-            </div>
-
-            <div class="progress">
-                <div id="cpuBar"></div>
-            </div>
-
-            <div id="cpuStatus" class="healthy">
-                HEALTHY
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                RAM Usage
-            </div>
-
-            <div id="ramValue" class="card-value">
-                46%
-            </div>
-
-            <div class="progress">
-                <div id="ramBar"></div>
-            </div>
-
-            <div id="ramStatus" class="healthy">
-                HEALTHY
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                Disk Usage
-            </div>
-
-            <div id="diskValue" class="card-value">
-                58%
-            </div>
-
-            <div class="progress">
-                <div id="diskBar"></div>
-            </div>
-
-            <div id="diskStatus" class="healthy">
-                HEALTHY
-            </div>
-
-        </div>
-
-
-    </div>
-
-
-    <div class="details">
-
-
-        <div class="detail">
-
-            <h3>
-                Operating System
-            </h3>
-
-            <p>
-                Windows 11
-            </p>
-
-        </div>
-
-
-        <div class="detail">
-
-            <h3>
-                Computer Name
-            </h3>
-
-            <p>
-                SERVERHub-PC
-            </p>
-
-        </div>
-
-
-        <div class="detail">
-
-            <h3>
-                IP Address
-            </h3>
-
-            <p>
-                192.168.1.10
-            </p>
-
-        </div>
-
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     SYSTEM INFO
-========================= -->
-
-<section id="system" class="page">
-
-    <h2>
-        System Information
-    </h2>
-
-    <div class="info-box">
-
-        <p>
-            <strong>Computer Name:</strong>
-            SERVERHub-PC
-        </p>
-
-        <p>
-            <strong>Operating System:</strong>
-            Windows 11
-        </p>
-
-        <p>
-            <strong>Processor:</strong>
-            Intel Processor
-        </p>
-
-        <p>
-            <strong>CPU Cores:</strong>
-            8
-        </p>
-
-        <p>
-            <strong>Total RAM:</strong>
-            16 GB
-        </p>
-
-        <p>
-            <strong>IP Address:</strong>
-            192.168.1.10
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     CPU
-========================= -->
-
-<section id="cpu" class="page">
-
-    <h2>
-        CPU Monitor
-    </h2>
-
-    <div class="big-monitor">
-
-        <h1 id="cpuLarge">
-            24%
-        </h1>
-
-        <p>
-            Current CPU Usage
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     RAM
-========================= -->
-
-<section id="ram" class="page">
-
-    <h2>
-        RAM Monitor
-    </h2>
-
-    <div class="big-monitor">
-
-        <h1 id="ramLarge">
-            46%
-        </h1>
-
-        <p>
-            Current RAM Usage
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     DISK
-========================= -->
-
-<section id="disk" class="page">
-
-    <h2>
-        Disk Monitor
-    </h2>
-
-    <div class="big-monitor">
-
-        <h1 id="diskLarge">
-            58%
-        </h1>
-
-        <p>
-            Current Disk Usage
-        </p>
-
-        <br>
-
-        <p>
-            Total Disk: 512 GB
-        </p>
-
-        <p>
-            Free Space: 215 GB
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     NETWORK
-========================= -->
-
-<section id="network" class="page">
-
-    <h2>
-        Network Monitor
-    </h2>
-
-    <div class="info-box">
-
-        <p>
-            <strong>Computer:</strong>
-            SERVERHub-PC
-        </p>
-
-        <p>
-            <strong>IP Address:</strong>
-            192.168.1.10
-        </p>
-
-        <p>
-            <strong>Network Status:</strong>
-            Connected
-        </p>
-
-        <p>
-            <strong>Connection:</strong>
-            Wi-Fi
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     PROCESSES
-========================= -->
-
-<section id="processes" class="page">
-
-    <h2>
-        Running Processes
-    </h2>
-
-    <br>
-
-    <div class="process-item">
-
-        <strong>
-            Google Chrome
-        </strong>
-
-        <span>
-            PID 1024
-        </span>
-
-    </div>
-
-
-    <div class="process-item">
-
-        <strong>
-            Python
-        </strong>
-
-        <span>
-            PID 2025
-        </span>
-
-    </div>
-
-
-    <div class="process-item">
-
-        <strong>
-            Windows Explorer
-        </strong>
-
-        <span>
-            PID 3040
-        </span>
-
-    </div>
-
-
-    <div class="process-item">
-
-        <strong>
-            Microsoft Edge
-        </strong>
-
-        <span>
-            PID 4080
-        </span>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     OPERATING SYSTEMS
-========================= -->
-
-<section id="os" class="page">
-
-    <h2>
-        Supported Operating Systems
-    </h2>
-
-    <div class="os-grid">
-
-        <div class="os-box">
-            Windows
-        </div>
-
-        <div class="os-box">
-            macOS
-        </div>
-
-        <div class="os-box">
-            Linux
-        </div>
-
-        <div class="os-box">
-            Android
-        </div>
-
-        <div class="os-box">
-            iOS
-        </div>
-
-        <div class="os-box">
-            iPadOS
-        </div>
-
-        <div class="os-box">
-            watchOS
-        </div>
-
-        <div class="os-box">
-            tvOS
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     ALERTS
-========================= -->
-
-<section id="alerts" class="page">
-
-    <h2>
-        Alerts
-    </h2>
-
-    <div class="info-box">
-
-        <p id="alertsText" class="healthy">
-            No active alerts. System is healthy.
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     REPORTS
-========================= -->
-
-<section id="reports" class="page">
-
-    <h2>
-        System Report
-    </h2>
-
-    <div class="info-box">
-
-        <p>
-            <strong>System:</strong>
-            SERVERHub-PC
-        </p>
-
-        <p>
-            <strong>CPU:</strong>
-            <span id="reportCPU">24%</span>
-        </p>
-
-        <p>
-            <strong>RAM:</strong>
-            <span id="reportRAM">46%</span>
-        </p>
-
-        <p>
-            <strong>Disk:</strong>
-            <span id="reportDisk">58%</span>
-        </p>
-
-        <p>
-            <strong>Status:</strong>
-            <span class="healthy">HEALTHY</span>
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- =========================
-     ADMIN CONTROL
-========================= -->
-
-<section id="admin" class="page">
-
-    <div class="page-title">
-
-        <h2>
-            SERVERHub Admin Control
-        </h2>
-
-        <p>
-            Control your website from here
-        </p>
-
-    </div>
-
-
-    <div class="admin-grid">
-
-
-        <div class="admin-card">
-
-            <h3>
-                Website Settings
-            </h3>
-
-            <label>
-                Website Name
-            </label>
-
-            <input
-                type="text"
-                id="adminWebsiteName"
-                value="ServerHealthMonitor2"
-            >
-
-
-            <label>
-                Theme
-            </label>
-
-            <select id="adminTheme">
-
-                <option value="dark">
-                    Dark
-                </option>
-
-                <option value="light">
-                    Light
-                </option>
-
-            </select>
-
-
-            <label>
-                Main Color
-            </label>
-
-            <select id="adminColor">
-
-                <option value="blue">
-                    Blue
-                </option>
-
-                <option value="green">
-                    Green
-                </option>
-
-                <option value="purple">
-                    Purple
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <div class="admin-card">
-
-            <h3>
-                Alert Settings
-            </h3>
-
-            <label>
-                CPU Warning %
-            </label>
-
-            <input
-                type="number"
-                id="cpuLimit"
-                value="70"
-            >
-
-
-            <label>
-                RAM Warning %
-            </label>
-
-            <input
-                type="number"
-                id="ramLimit"
-                value="70"
-            >
-
-
-            <label>
-                Disk Warning %
-            </label>
-
-            <input
-                type="number"
-                id="diskLimit"
-                value="80"
-            >
-
-        </div>
-
-
-        <div class="admin-card">
-
-            <h3>
-                Show / Hide Features
-            </h3>
-
-            <div class="feature-list">
-
-                <label>
-                    <input id="showCPU" type="checkbox" checked>
-                    CPU Monitor
-                </label>
-
-                <label>
-                    <input id="showRAM" type="checkbox" checked>
-                    RAM Monitor
-                </label>
-
-                <label>
-                    <input id="showDisk" type="checkbox" checked>
-                    Disk Monitor
-                </label>
-
-                <label>
-                    <input id="showNetwork" type="checkbox" checked>
-                    Network Monitor
-                </label>
-
-                <label>
-                    <input id="showProcesses" type="checkbox" checked>
-                    Processes
-                </label>
-
-                <label>
-                    <input id="showAlerts" type="checkbox" checked>
-                    Alerts
-                </label>
-
-                <label>
-                    <input id="showReports" type="checkbox" checked>
-                    Reports
-                </label>
-
-            </div>
-
-        </div>
-
-
-    </div>
-
-
-    <button class="save-btn" onclick="saveAdminSettings()">
-        Save Changes
-    </button>
-
-    <p id="saveMessage" class="save-message"></p>
-
-</section>
-
-
-</main>
-
-</div>
-
-
-<script>
-
-/* =========================
-   PAGE NAVIGATION
-========================= */
-
-function showPage(pageID){
-
-    document
-    .querySelectorAll(".page")
-    .forEach(page => {
-
-        page.classList.remove("active");
-
-    });
-
-    document
-    .getElementById(pageID)
-    .classList.add("active");
-
-}
-
-
-/* =========================
-   DEMO MONITORING
-========================= */
-
-let cpu = 24;
-let ram = 46;
-let disk = 58;
-
-
-function refreshData(){
-
-    cpu =
-        Math.floor(
-            Math.random() * 60
-        ) + 15;
-
-    ram =
-        Math.floor(
-            Math.random() * 45
-        ) + 35;
-
-    disk =
-        Math.floor(
-            Math.random() * 25
-        ) + 50;
-
-
-    updateDisplay();
-
-}
-
-
-function updateDisplay(){
-
-    document.getElementById("cpuValue").innerText =
-        cpu + "%";
-
-    document.getElementById("ramValue").innerText =
-        ram + "%";
-
-    document.getElementById("diskValue").innerText =
-        disk + "%";
-
-
-    document.getElementById("cpuLarge").innerText =
-        cpu + "%";
-
-    document.getElementById("ramLarge").innerText =
-        ram + "%";
-
-    document.getElementById("diskLarge").innerText =
-        disk + "%";
-
-
-    document.getElementById("cpuBar").style.width =
-        cpu + "%";
-
-    document.getElementById("ramBar").style.width =
-        ram + "%";
-
-    document.getElementById("diskBar").style.width =
-        disk + "%";
-
-
-    document.getElementById("reportCPU").innerText =
-        cpu + "%";
-
-    document.getElementById("reportRAM").innerText =
-        ram + "%";
-
-    document.getElementById("reportDisk").innerText =
-        disk + "%";
-
-
-    updateStatus(
-        "cpuStatus",
-        cpu,
-        Number(
-            localStorage.getItem("cpuLimit") || 70
-        )
-    );
-
-
-    updateStatus(
-        "ramStatus",
-        ram,
-        Number(
-            localStorage.getItem("ramLimit") || 70
-        )
-    );
-
-
-    updateStatus(
-        "diskStatus",
-        disk,
-        Number(
-            localStorage.getItem("diskLimit") || 80
-        )
-    );
-
-
-    updateAlerts();
-
-}
-
-
-function updateStatus(
-    elementID,
-    value,
-    warningLimit
-){
-
-    const element =
-        document.getElementById(elementID);
-
-
-    if(value >= 90){
-
-        element.innerText =
-            "CRITICAL";
-
-        element.className =
-            "critical";
-
-    }
-
-    else if(value >= warningLimit){
-
-        element.innerText =
-            "WARNING";
-
-        element.className =
-            "warning";
-
-    }
-
-    else{
-
-        element.innerText =
-            "HEALTHY";
-
-        element.className =
-            "healthy";
-
-    }
-
-}
-
-
-function updateAlerts(){
-
-    const cpuLimit =
-        Number(
-            localStorage.getItem("cpuLimit") || 70
-        );
-
-    const ramLimit =
-        Number(
-            localStorage.getItem("ramLimit") || 70
-        );
-
-    const diskLimit =
-        Number(
-            localStorage.getItem("diskLimit") || 80
-        );
-
-
-    let alerts = [];
-
-
-    if(cpu >= cpuLimit){
-
-        alerts.push(
-            "CPU usage is high"
-        );
-
-    }
-
-
-    if(ram >= ramLimit){
-
-        alerts.push(
-            "RAM usage is high"
-        );
-
-    }
-
-
-    if(disk >= diskLimit){
-
-        alerts.push(
-            "Disk usage is high"
-        );
-
-    }
-
-
-    const alertsText =
-        document.getElementById(
-            "alertsText"
-        );
-
-
-    if(alerts.length === 0){
-
-        alertsText.innerText =
-            "No active alerts. System is healthy.";
-
-        alertsText.className =
-            "healthy";
-
-    }
-
-    else{
-
-        alertsText.innerText =
-            alerts.join(" | ");
-
-        alertsText.className =
-            "warning";
-
-    }
-
-}
-
-
-/* =========================
-   ADMIN CONTROL
-========================= */
-
-function saveAdminSettings(){
-
-    const websiteName =
-        document
-        .getElementById(
-            "adminWebsiteName"
-        )
-        .value;
-
-
-    const theme =
-        document
-        .getElementById(
-            "adminTheme"
-        )
-        .value;
-
-
-    const color =
-        document
-        .getElementById(
-            "adminColor"
-        )
-        .value;
-
-
-    const cpuLimit =
-        document
-        .getElementById(
-            "cpuLimit"
-        )
-        .value;
-
-
-    const ramLimit =
-        document
-        .getElementById(
-            "ramLimit"
-        )
-        .value;
-
-
-    const diskLimit =
-        document
-        .getElementById(
-            "diskLimit"
-        )
-        .value;
-
-
-    localStorage.setItem(
-        "websiteName",
-        websiteName
-    );
-
-
-    localStorage.setItem(
-        "theme",
-        theme
-    );
-
-
-    localStorage.setItem(
-        "color",
-        color
-    );
-
-
-    localStorage.setItem(
-        "cpuLimit",
-        cpuLimit
-    );
-
-
-    localStorage.setItem(
-        "ramLimit",
-        ramLimit
-    );
-
-
-    localStorage.setItem(
-        "diskLimit",
-        diskLimit
-    );
-
-
-    localStorage.setItem(
-        "showCPU",
-        document.getElementById("showCPU").checked
-    );
-
-
-    localStorage.setItem(
-        "showRAM",
-        document.getElementById("showRAM").checked
-    );
-
-
-    localStorage.setItem(
-        "showDisk",
-        document.getElementById("showDisk").checked
-    );
-
-
-    localStorage.setItem(
-        "showNetwork",
-        document.getElementById("showNetwork").checked
-    );
-
-
-    localStorage.setItem(
-        "showProcesses",
-        document.getElementById("showProcesses").checked
-    );
-
-
-    localStorage.setItem(
-        "showAlerts",
-        document.getElementById("showAlerts").checked
-    );
-
-
-    localStorage.setItem(
-        "showReports",
-        document.getElementById("showReports").checked
-    );
-
-
-    applySettings();
-
-
-    document
-    .getElementById("saveMessage")
-    .innerText =
-        "Settings saved successfully!";
-
-}
-
-
-/* =========================
-   APPLY SETTINGS
-========================= */
-
-function applySettings(){
-
-    const websiteName =
-        localStorage.getItem(
-            "websiteName"
-        ) || "ServerHealthMonitor2";
-
-
-    const theme =
-        localStorage.getItem(
-            "theme"
-        ) || "dark";
-
-
-    const color =
-        localStorage.getItem(
-            "color"
-        ) || "blue";
-
-
-    document.title =
-        websiteName;
-
-
-    document
-    .getElementById(
-        "websiteTitle"
+    hero(
+        "🖥️ Server Health Monitoring",
+        "Monitor. Analyze. Maintain."
     )
-    .innerText =
-        websiteName;
 
+    cpu = psutil.cpu_percent(interval=0.4)
+    ram = psutil.virtual_memory().percent
+    disk = psutil.disk_usage("/").percent
 
-    document
-    .getElementById(
-        "adminWebsiteName"
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.metric("⚙️ CPU Usage", f"{cpu}%")
+        status_message("CPU", cpu, st.session_state.cpu_warning)
+
+    with c2:
+        st.metric("🧠 RAM Usage", f"{ram}%")
+        status_message("RAM", ram, st.session_state.ram_warning)
+
+    with c3:
+        st.metric("💾 Disk Usage", f"{disk}%")
+        status_message("Disk", disk, st.session_state.disk_warning, 95)
+
+    st.write("")
+    st.markdown("## ⚡ Quick Access")
+
+    q1, q2, q3, q4 = st.columns(4)
+
+    with q1:
+        if st.button("⚙️ CPU Monitor", key="quick_cpu"):
+            go_to("⚙️ CPU Monitor")
+            st.rerun()
+
+    with q2:
+        if st.button("🧠 RAM Monitor", key="quick_ram"):
+            go_to("🧠 RAM Monitor")
+            st.rerun()
+
+    with q3:
+        if st.button("💾 Disk Monitor", key="quick_disk"):
+            go_to("💾 Disk Monitor")
+            st.rerun()
+
+    with q4:
+        if st.button("🌐 Network Monitor", key="quick_network"):
+            go_to("🌐 Network Monitor")
+            st.rerun()
+
+    st.write("")
+    st.markdown("## 🖥️ Monitoring Features")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        card("ℹ️", "System Info", "View operating system, hostname, processor, CPU cores and IP information.", "card-blue")
+        if st.button("Open System Info →", key="card_system"):
+            go_to("ℹ️ System Info")
+            st.rerun()
+
+    with c2:
+        card("📋", "Processes", "View active processes and basic memory usage information.", "card-green")
+        if st.button("Open Processes →", key="card_process"):
+            go_to("📋 Processes")
+            st.rerun()
+
+    with c3:
+        card("⚠️", "Alerts", "Review CPU, RAM and disk warning status using configurable thresholds.", "card-orange")
+        if st.button("Open Alerts →", key="card_alerts"):
+            go_to("⚠️ Alerts")
+            st.rerun()
+
+    c4, c5, c6 = st.columns(3)
+
+    with c4:
+        card("💻", "Operating Systems", "Show supported platforms including Windows, macOS, Linux, iOS and Android.", "card-purple")
+        if st.button("Open Operating Systems →", key="card_os"):
+            go_to("💻 Operating Systems")
+            st.rerun()
+
+    with c5:
+        card("📄", "Reports", "Create a simple server health summary for presentation and documentation.", "card-cyan")
+        if st.button("Open Reports →", key="card_report"):
+            go_to("📄 Reports")
+            st.rerun()
+
+    with c6:
+        card("🛠️", "Admin Control", "Change website name and health warning limits from one control page.", "card-pink")
+        if st.button("Open Admin Control →", key="card_admin"):
+            go_to("🛠️ Admin Control")
+            st.rerun()
+
+    st.markdown(
+        """
+        <div class="footer-box">
+        <b>🖥️ ServerHealthMonitoring</b><br><br>
+        Monitor CPU, RAM, disk, network information and system health from one dashboard.
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-    .value =
-        websiteName;
 
+# =========================================================
+# SYSTEM INFO
+# =========================================================
 
-    document
-    .getElementById(
-        "adminTheme"
-    )
-    .value =
-        theme;
+elif st.session_state.page == "ℹ️ System Info":
 
+    hero("ℹ️ System Information", "View the current server and operating system details.")
 
-    document
-    .getElementById(
-        "adminColor"
-    )
-    .value =
-        color;
-
-
-    document.body.className =
-        "";
-
-
-    if(theme === "light"){
-
-        document.body.classList.add(
-            "light"
-        );
-
+    info = {
+        "Computer Name": socket.gethostname(),
+        "Operating System": platform.system(),
+        "OS Release": platform.release(),
+        "OS Version": platform.version(),
+        "Processor": platform.processor() or "Unavailable",
+        "CPU Cores": psutil.cpu_count(logical=True),
+        "Total RAM": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
+        "IP Address": get_ip()
     }
 
+    for key, value in info.items():
+        st.write(f"**{key}:** {value}")
 
-    if(color === "green"){
+    if st.button("⬅ Back to Dashboard", key="back_system"):
+        go_to("🏠 Dashboard")
+        st.rerun()
 
-        document.body.classList.add(
-            "green"
-        );
+# =========================================================
+# CPU
+# =========================================================
 
-    }
+elif st.session_state.page == "⚙️ CPU Monitor":
 
+    hero("⚙️ CPU Monitor", "Monitor processor utilization and CPU core information.")
 
-    if(color === "purple"){
+    cpu = psutil.cpu_percent(interval=0.6)
 
-        document.body.classList.add(
-            "purple"
-        );
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("CPU Usage", f"{cpu}%")
+    with c2:
+        st.metric("Physical Cores", psutil.cpu_count(logical=False))
+    with c3:
+        st.metric("Logical Cores", psutil.cpu_count(logical=True))
 
-    }
+    st.progress(int(cpu))
+    status_message("CPU", cpu, st.session_state.cpu_warning)
 
+    if st.button("⬅ Back to Dashboard", key="back_cpu"):
+        go_to("🏠 Dashboard")
+        st.rerun()
 
-    loadCheckbox(
-        "showCPU",
-        "menuCPU"
-    );
+# =========================================================
+# RAM
+# =========================================================
 
+elif st.session_state.page == "🧠 RAM Monitor":
 
-    loadCheckbox(
-        "showRAM",
-        "menuRAM"
-    );
+    hero("🧠 RAM Monitor", "Monitor memory utilization and available RAM.")
 
+    memory = psutil.virtual_memory()
 
-    loadCheckbox(
-        "showDisk",
-        "menuDisk"
-    );
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("RAM Usage", f"{memory.percent}%")
+    with c2:
+        st.metric("Total RAM", f"{round(memory.total / (1024 ** 3), 2)} GB")
+    with c3:
+        st.metric("Available RAM", f"{round(memory.available / (1024 ** 3), 2)} GB")
 
+    st.progress(int(memory.percent))
+    status_message("RAM", memory.percent, st.session_state.ram_warning)
 
-    loadCheckbox(
-        "showNetwork",
-        "menuNetwork"
-    );
+    if st.button("⬅ Back to Dashboard", key="back_ram"):
+        go_to("🏠 Dashboard")
+        st.rerun()
 
+# =========================================================
+# DISK
+# =========================================================
 
-    loadCheckbox(
-        "showProcesses",
-        "menuProcesses"
-    );
+elif st.session_state.page == "💾 Disk Monitor":
 
+    hero("💾 Disk Monitor", "Monitor storage usage and available disk space.")
 
-    loadCheckbox(
-        "showAlerts",
-        "menuAlerts"
-    );
+    disk = psutil.disk_usage("/")
 
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Disk Usage", f"{disk.percent}%")
+    with c2:
+        st.metric("Total Disk", f"{round(disk.total / (1024 ** 3), 2)} GB")
+    with c3:
+        st.metric("Free Space", f"{round(disk.free / (1024 ** 3), 2)} GB")
 
-    loadCheckbox(
-        "showReports",
-        "menuReports"
-    );
+    st.progress(int(disk.percent))
+    status_message("Disk", disk.percent, st.session_state.disk_warning, 95)
 
+    if st.button("⬅ Back to Dashboard", key="back_disk"):
+        go_to("🏠 Dashboard")
+        st.rerun()
 
-    document
-    .getElementById("cpuLimit")
-    .value =
-        localStorage.getItem(
-            "cpuLimit"
-        ) || 70;
+# =========================================================
+# NETWORK
+# =========================================================
 
+elif st.session_state.page == "🌐 Network Monitor":
 
-    document
-    .getElementById("ramLimit")
-    .value =
-        localStorage.getItem(
-            "ramLimit"
-        ) || 70;
+    hero("🌐 Network Monitor", "View basic network and connection information.")
 
+    c1, c2, c3 = st.columns(3)
 
-    document
-    .getElementById("diskLimit")
-    .value =
-        localStorage.getItem(
-            "diskLimit"
-        ) || 80;
+    with c1:
+        st.metric("Hostname", socket.gethostname())
 
+    with c2:
+        st.metric("IP Address", get_ip())
 
-    updateDisplay();
+    with c3:
+        st.metric("Status", "Connected")
 
-}
+    net = psutil.net_io_counters()
 
+    st.markdown("### 📡 Network Traffic")
 
-function loadCheckbox(
-    storageName,
-    menuID
-){
+    n1, n2 = st.columns(2)
 
-    const stored =
-        localStorage.getItem(
-            storageName
-        );
+    with n1:
+        st.metric("Data Sent", f"{round(net.bytes_sent / (1024 ** 2), 2)} MB")
 
+    with n2:
+        st.metric("Data Received", f"{round(net.bytes_recv / (1024 ** 2), 2)} MB")
 
-    const enabled =
-        stored === null
-        ?
-        true
-        :
-        stored === "true";
+    if st.button("⬅ Back to Dashboard", key="back_network"):
+        go_to("🏠 Dashboard")
+        st.rerun()
 
+# =========================================================
+# PROCESSES
+# =========================================================
 
-    document
-    .getElementById(storageName)
-    .checked =
-        enabled;
+elif st.session_state.page == "📋 Processes":
 
+    hero("📋 Running Processes", "Review active processes on the monitored system.")
 
-    document
-    .getElementById(menuID)
-    .style.display =
-        enabled
-        ?
-        "block"
-        :
-        "none";
+    rows = []
 
-}
+    for process in psutil.process_iter(["pid", "name", "memory_percent"]):
+        try:
+            rows.append({
+                "PID": process.info["pid"],
+                "Process": process.info["name"],
+                "Memory %": round(process.info["memory_percent"], 2)
+            })
 
+            if len(rows) >= 50:
+                break
 
-/* =========================
-   START
-========================= */
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
 
-applySettings();
+    st.dataframe(rows, use_container_width=True)
 
-updateDisplay();
+    if st.button("⬅ Back to Dashboard", key="back_processes"):
+        go_to("🏠 Dashboard")
+        st.rerun()
 
-setInterval(
-    refreshData,
-    5000
-);
+# =========================================================
+# OPERATING SYSTEMS
+# =========================================================
 
-</script>
+elif st.session_state.page == "💻 Operating Systems":
 
-</body>
-</html>
+    hero("💻 Operating Systems", "Supported operating system categories for the project.")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        card("🪟", "Windows", "Desktop and Windows Server monitoring.", "card-blue")
+        card("📱", "iOS", "Mobile device operating system category.", "card-cyan")
+
+    with c2:
+        card("🍎", "macOS", "Apple desktop operating system category.", "card-purple")
+        card("📱", "Android", "Android mobile and tablet category.", "card-green")
+
+    with c3:
+        card("🐧", "Linux", "Linux server and desktop monitoring.", "card-green")
+        card("📱", "iPadOS", "Apple iPad operating system category.", "card-blue")
+
+    with c4:
+        card("⌚", "watchOS", "Apple Watch operating system category.", "card-orange")
+        card("📺", "tvOS", "Apple TV operating system category.", "card-pink")
+
+    st.info(f"Current host operating system: {platform.system()} {platform.release()}")
+
+    if st.button("⬅ Back to Dashboard", key="back_os"):
+        go_to("🏠 Dashboard")
+        st.rerun()
+
+# =========================================================
+# ALERTS
+# =========================================================
+
+elif st.session_state.page == "⚠️ Alerts":
+
+    hero("⚠️ System Alerts", "Review current CPU, RAM and disk health warnings.")
+
+    cpu = psutil.cpu_percent(interval=0.4)
+    ram = psutil.virtual_memory().percent
+    disk = psutil.disk_usage("/").percent
+
+    status_message("CPU", cpu, st.session_state.cpu_warning)
+    status_message("RAM", ram, st.session_state.ram_warning)
+    status_message("Disk", disk, st.session_state.disk_warning, 95)
+
+    if (
+        cpu < st.session_state.cpu_warning
+        and ram < st.session_state.ram_warning
+        and disk < st.session_state.disk_warning
+    ):
+        st.success("✅ No active alerts. System is healthy.")
+
+    if st.button("⬅ Back to Dashboard", key="back_alerts"):
+        go_to("🏠 Dashboard")
+        st.rerun()
+
+# =========================================================
+# REPORTS
+# =========================================================
+
+elif st.session_state.page == "📄 Reports":
+
+    hero("📄 Server Health Report", "Generate a current system health summary.")
+
+    cpu = psutil.cpu_percent(interval=0.4)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
+
+    overall = "HEALTHY"
+
+    if cpu >= 90 or memory.percent >= 90 or disk.percent >= 95:
+        overall = "CRITICAL"
+    elif (
+        cpu >= st.session_state.cpu_warning
+        or memory.percent >= st.session_state.ram_warning
+        or disk.percent >= st.session_state.disk_warning
+    ):
+        overall = "WARNING"
+
+    report = f"""
+SERVER HEALTH REPORT
+
+Date & Time: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}
+
+Computer Name: {socket.gethostname()}
+Operating System: {platform.system()} {platform.release()}
+IP Address: {get_ip()}
+
+CPU Usage: {cpu}%
+RAM Usage: {memory.percent}%
+Disk Usage: {disk.percent}%
+
+Overall Status: {overall}
+"""
+
+    st.code(report)
+
+    r1, r2, r3 = st.columns(3)
+
+    with r1:
+        st.metric("CPU", f"{cpu}%")
+
+    with r2:
+        st.metric("RAM", f"{memory.percent}%")
+
+    with r3:
+        st.metric("Disk", f"{disk.percent}%")
+
+    if overall == "HEALTHY":
+        st.success("🟢 Overall System Status: HEALTHY")
+    elif overall == "WARNING":
+        st.warning("🟠 Overall System Status: WARNING")
+    else:
+        st.error("🔴 Overall System Status: CRITICAL")
+
+    if st.button("⬅ Back to Dashboard", key="back_reports"):
+        go_to("🏠 Dashboard")
+        st.rerun()
+
+# =========================================================
+# ADMIN CONTROL
+# =========================================================
+
+elif st.session_state.page == "🛠️ Admin Control":
+
+    hero("🛠️ Admin Control", "Control the ServerHealthMonitoring dashboard settings.")
+
+    st.markdown("### Website Settings")
+
+    site_name = st.text_input(
+        "Website Name",
+        st.session_state.site_name
+    )
+
+    st.markdown("### Alert Thresholds")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        cpu_warning = st.number_input(
+            "CPU Warning %",
+            min_value=1,
+            max_value=100,
+            value=int(st.session_state.cpu_warning)
+        )
+
+    with c2:
+        ram_warning = st.number_input(
+            "RAM Warning %",
+            min_value=1,
+            max_value=100,
+            value=int(st.session_state.ram_warning)
+        )
+
+    with c3:
+        disk_warning = st.number_input(
+            "Disk Warning %",
+            min_value=1,
+            max_value=100,
+            value=int(st.session_state.disk_warning)
+        )
+
+    if st.button("💾 Save Admin Settings"):
+        st.session_state.site_name = site_name
+        st.session_state.cpu_warning = int(cpu_warning)
+        st.session_state.ram_warning = int(ram_warning)
+        st.session_state.disk_warning = int(disk_warning)
+
+        st.success("✅ Admin settings saved for this session.")
+
+    st.info(
+        "Admin Control changes the project settings while this Streamlit session is running."
+    )
+
+    if st.button("⬅ Back to Dashboard", key="back_admin"):
+        go_to("🏠 Dashboard")
+        st.rerun()
+'''
+
+requirements = '''streamlit
+psutil
+'''
+
+readme = '''# ServerHealthMonitoring
+
+Streamlit server health monitoring dashboard.
+
+## Features
+- Dashboard
+- System Info
+- CPU Monitor
+- RAM Monitor
+- Disk Monitor
+- Network Monitor
+- Processes
+- Operating Systems
+- Alerts
+- Reports
+- Admin Control
+
+## Run locally
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
