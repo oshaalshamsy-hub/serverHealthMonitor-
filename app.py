@@ -178,6 +178,82 @@ def card(
 st.markdown("""
 <style>
 
+/* FIX TEXT COLORS */
+
+.stApp,
+.stApp p,
+.stApp span,
+.stApp label,
+.stApp div {
+    color: #0f172a;
+}
+
+/* Sidebar text */
+section[data-testid="stSidebar"] * {
+    color: #102a56 !important;
+}
+
+/* Radio menu */
+div[role="radiogroup"] label {
+    color: #102a56 !important;
+}
+
+/* Input labels */
+.stTextInput label,
+.stNumberInput label,
+.stSelectbox label {
+    color: #102a56 !important;
+    font-weight: 600 !important;
+}
+
+/* Input text */
+.stTextInput input,
+.stNumberInput input {
+    color: #0f172a !important;
+    background: white !important;
+}
+
+/* Selectbox */
+div[data-baseweb="select"] > div {
+    background: white !important;
+    color: #0f172a !important;
+}
+
+/* Metric text */
+div[data-testid="stMetric"] * {
+    color: #102a56 !important;
+}
+
+/* Keep button text white */
+.stButton > button,
+.stButton > button * {
+    color: white !important;
+}
+
+/* Keep hero text white */
+.hero,
+.hero *,
+.hero-title,
+.hero-company,
+.hero-subtitle,
+.hero-tags {
+    color: white !important;
+}
+
+/* Cards */
+.card-title {
+    color: #102a56 !important;
+}
+
+.card-text {
+    color: #475569 !important;
+}
+
+/* Alerts */
+div[data-testid="stAlert"] * {
+    color: #0f172a !important;
+}
+
 /* =========================================================
    MAIN BACKGROUND
 ========================================================= */
