@@ -141,17 +141,12 @@ def hero(title, subtitle):
 
 def card(icon, title, text, color):
 
-    html = textwrap.dedent(f"""
-    <div class="card {color}">
-        <div class="card-title">
-            {icon} {title}
-        </div>
-
-        <div class="card-text">
-            {text}
-        </div>
-    </div>
-    """)
+    html = (
+        f'<div class="card {color}">'
+        f'<div class="card-title">{icon} {title}</div>'
+        f'<div class="card-text">{text}</div>'
+        f'</div>'
+    )
 
     st.markdown(
         html,
@@ -235,11 +230,13 @@ div[data-testid="stMetric"] * {
 
 .card-text {
     color: #475569 !important;
-}
-
-/* Alerts */
-div[data-testid="stAlert"] * {
-    color: #0f172a !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    font-family: Arial, sans-serif !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    white-space: normal !important;
 }
 
 /* =========================================================
