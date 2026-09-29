@@ -4,6 +4,7 @@ import platform
 import socket
 from datetime import datetime
 from pathlib import Path
+import textwrap
 
 # =========================================================
 # PAGE SETUP
@@ -122,17 +123,11 @@ def hero(title, subtitle):
         </div>
 
         <div class="hero-tags">
-
             ⚙️ CPU &nbsp;&nbsp;
-
             🧠 RAM &nbsp;&nbsp;
-
             💾 Disk &nbsp;&nbsp;
-
             🌐 Network &nbsp;&nbsp;
-
             ⚠️ Alerts
-
         </div>
 
     </div>
@@ -144,16 +139,10 @@ def hero(title, subtitle):
     )
 
 
-def card(
-    icon,
-    title,
-    text,
-    color
-):
+def card(icon, title, text, color):
 
-    html = f"""
+    html = textwrap.dedent(f"""
     <div class="card {color}">
-
         <div class="card-title">
             {icon} {title}
         </div>
@@ -161,9 +150,8 @@ def card(
         <div class="card-text">
             {text}
         </div>
-
     </div>
-    """
+    """)
 
     st.markdown(
         html,
