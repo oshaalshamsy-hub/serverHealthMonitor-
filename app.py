@@ -2038,7 +2038,7 @@ Overall Status:
 # =========================================================
 
 elif st.session_state.page == "🛠️ Admin Control":
-    elif st.session_state.page == "🔐 Admin Login":
+ if st.session_state.page == "🔐 Admin Login":
 
     st.markdown("## 🔐 Admin Login")
 
@@ -2056,6 +2056,14 @@ elif st.session_state.page == "🛠️ Admin Control":
 
         else:
             st.error("Wrong password")
+
+
+elif st.session_state.page == "🛠️ Admin Control":
+
+    hero(
+        "🛠️ Admin Control",
+        "Control your ServerHealthMonitoring settings."
+    )
 
 
 elif st.session_state.page == "🛠️ Admin Control":
