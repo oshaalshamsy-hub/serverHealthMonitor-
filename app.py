@@ -775,38 +775,26 @@ div[data-baseweb="input"] {
 ========================================================= */
 
 .footer-box {
-
-    margin-top:
-        25px;
-
-    padding:
-        22px;
-
-    border-radius:
-        20px;
-
-    color:
-        white;
-    .footer-box,
-.footer-box * {
+    margin-top: 25px;
+    padding: 22px;
+    border-radius: 20px;
     color: white !important;
-}
 
     background:
-
         linear-gradient(
             100deg,
             #102a56,
             #164e9c,
             #6339d7
         );
-
-    box-shadow:
-
-        0 10px 25px
-        rgba(30,64,175,.18);
 }
 
+.footer-box,
+.footer-box *,
+.footer-box b,
+.footer-box span {
+    color: white !important;
+}
 
 
 /* =========================================================
