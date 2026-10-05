@@ -787,6 +787,10 @@ div[data-baseweb="input"] {
 
     color:
         white;
+    .footer-box,
+.footer-box * {
+    color: white !important;
+}
 
     background:
 
@@ -802,6 +806,7 @@ div[data-baseweb="input"] {
         0 10px 25px
         rgba(30,64,175,.18);
 }
+
 
 
 /* =========================================================
