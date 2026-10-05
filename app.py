@@ -108,7 +108,9 @@ def status_box(title, value, warning, critical=90):
 def hero(title, subtitle):
     return
 
-        <div class="hero-tags">
+
+def card(icon, title, text, color):
+
             ⚙️ CPU &nbsp;&nbsp;
             🧠 RAM &nbsp;&nbsp;
             💾 Disk &nbsp;&nbsp;
