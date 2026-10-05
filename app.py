@@ -6,6 +6,9 @@ from datetime import datetime
 from pathlib import Path
 import textwrap
 
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
+    
 # =========================================================
 # PAGE SETUP
 # =========================================================
@@ -30,9 +33,14 @@ pages = [
     "📋 Processes",
     "💻 Operating Systems",
     "⚠️ Alerts",
-    "📄 Reports",
-    "🛠️ Admin Control"
+    "📄 Reports"
 ]
+
+if st.session_state.admin_logged_in:
+    pages.append("🛠️ Admin Control")
+else:
+    pages.append("🔐 Admin Login")
+
 
 if "page" not in st.session_state:
     st.session_state.page = "🏠 Dashboard"
@@ -2030,6 +2038,33 @@ Overall Status:
 # =========================================================
 
 elif st.session_state.page == "🛠️ Admin Control":
+    elif st.session_state.page == "🔐 Admin Login":
+
+    st.markdown("## 🔐 Admin Login")
+
+    password = st.text_input(
+        "Enter Password",
+        type="password"
+    )
+
+    if st.button("Login"):
+
+        if password == "1234":
+            st.session_state.admin_logged_in = True
+            st.session_state.page = "🛠️ Admin Control"
+            st.rerun()
+
+        else:
+            st.error("Wrong password")
+
+
+elif st.session_state.page == "🛠️ Admin Control":
+
+    hero(
+        "🛠️ Admin Control",
+        "Control your ServerHealthMonitoring settings."
+    )
+
 
     hero(
         "🛠️ Admin Control",
