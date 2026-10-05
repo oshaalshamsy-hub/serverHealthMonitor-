@@ -106,21 +106,7 @@ def status_box(title, value, warning, critical=90):
 
 
 def hero(title, subtitle):
-
-    html = f"""
-    <div class="hero">
-
-        <div class="hero-company">
-            SERVERHub • Server Health Monitoring
-        </div>
-
-        <div class="hero-title">
-            {title}
-        </div>
-
-        <div class="hero-subtitle">
-            {subtitle}
-        </div>
+    return
 
         <div class="hero-tags">
             ⚙️ CPU &nbsp;&nbsp;
@@ -928,12 +914,6 @@ st.sidebar.caption(
 # =========================================================
 
 if st.session_state.page == "🏠 Dashboard":
-
-    hero(
-        "🖥️ Server Health Monitoring",
-        "Monitor. Analyze. Maintain."
-    )
-
 
     cpu = psutil.cpu_percent(
         interval=0.4
