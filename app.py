@@ -1196,26 +1196,10 @@ if st.session_state.page == "🏠 Dashboard":
 
     st.markdown(
         """
-        <div class="footer-box" style="color:white !important;">
+         footer_html = '<div class="footer-box" style="color:white !important;"><b style="color:white !important;">🖥️ SERVERHub</b><br><br><span style="color:white !important;">Smart Server Health & Performance Monitoring</span><br><br><span style="color:white !important;">Monitor • Analyze • Maintain</span></div>'
 
-            <b style="color:white !important;">
-                🖥️ SERVERHub
-            </b>
-
-            <br><br>
-
-            <span style="color:white !important;">
-                Smart Server Health & Performance Monitoring
-            </span>
-
-            <br><br>
-
-            <span style="color:white !important;">
-                Monitor • Analyze • Maintain
-            </span>
-
-        </div>
-        """,
+    st.markdown(
+        footer_html,
         unsafe_allow_html=True
     )
 
