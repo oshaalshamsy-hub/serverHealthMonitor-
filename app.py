@@ -2057,7 +2057,13 @@ elif st.session_state.page == "🛠️ Admin Control":
         else:
             st.error("Wrong password")
 
+elif st.session_state.page == "🛠️ Admin Control":
 
+    if not st.session_state.admin_logged_in:
+        st.error("Access denied")
+        st.session_state.page = "🔐 Admin Login"
+        st.rerun()
+        
 elif st.session_state.page == "🛠️ Admin Control":
 
     hero(
