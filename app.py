@@ -111,21 +111,17 @@ def hero(title, subtitle):
 
 def card(icon, title, text, color):
 
-            ⚙️ CPU &nbsp;&nbsp;
-            🧠 RAM &nbsp;&nbsp;
-            💾 Disk &nbsp;&nbsp;
-            🌐 Network &nbsp;&nbsp;
-            ⚠️ Alerts
-        </div>
-
-    </div>
-    """
+    html = (
+        f'<div class="card {color}">'
+        f'<div class="card-title">{icon} {title}</div>'
+        f'<div class="card-text">{text}</div>'
+        f'</div>'
+    )
 
     st.markdown(
         html,
         unsafe_allow_html=True
     )
-
 
 def card(icon, title, text, color):
 
