@@ -1192,30 +1192,32 @@ if st.session_state.page == "🏠 Dashboard":
             st.rerun()
 
 
- st.markdown(
-    """
-    <div class="footer-box" style="color:white !important;">
+if st.session_state.page == "🏠 Dashboard":
 
-        <b style="color:white !important;">
-            🖥️ SERVERHub
-        </b>
+    st.markdown(
+        """
+        <div class="footer-box" style="color:white !important;">
 
-        <br><br>
+            <b style="color:white !important;">
+                🖥️ SERVERHub
+            </b>
 
-        <span style="color:white !important;">
-            Smart Server Health & Performance Monitoring
-        </span>
+            <br><br>
 
-        <br><br>
+            <span style="color:white !important;">
+                Smart Server Health & Performance Monitoring
+            </span>
 
-        <span style="color:white !important;">
-            Monitor • Analyze • Maintain
-        </span>
+            <br><br>
 
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+            <span style="color:white !important;">
+                Monitor • Analyze • Maintain
+            </span>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # =========================================================
