@@ -231,6 +231,135 @@ div[data-testid="stMetric"] * {
     white-space: normal !important;
 }
 
+/* ===== SERVERHub NEW COLORS ===== */
+
+.stApp {
+    background:
+        radial-gradient(circle at 90% 10%, rgba(20,184,166,.16), transparent 28%),
+        linear-gradient(135deg, #f0fdfa 0%, #f8fafc 55%, #ecfdf5 100%);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(
+        180deg,
+        #dff7f3 0%,
+        #e8f8f5 50%,
+        #f0fdfa 100%
+    ) !important;
+
+    border-right: 1px solid #99f6e4;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(
+        90deg,
+        #0f766e,
+        #14b8a6
+    ) !important;
+
+    color: white !important;
+
+    border: none !important;
+
+    border-radius: 14px !important;
+
+    box-shadow:
+        0 7px 18px
+        rgba(20,184,166,.25) !important;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(
+        90deg,
+        #115e59,
+        #0d9488
+    ) !important;
+
+    color: white !important;
+}
+
+/* Titles */
+h1,
+h2,
+h3 {
+    color: #134e4a !important;
+}
+
+/* Metric cards */
+div[data-testid="stMetric"] {
+    background: #ffffff !important;
+
+    border: 1px solid #ccfbf1 !important;
+
+    border-radius: 20px !important;
+
+    box-shadow:
+        0 10px 25px
+        rgba(15,118,110,.10) !important;
+}
+
+/* Feature cards */
+
+.card-blue {
+    background:
+        linear-gradient(135deg, #ecfeff, #cffafe) !important;
+}
+
+.card-green {
+    background:
+        linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+}
+
+.card-purple {
+    background:
+        linear-gradient(135deg, #f0fdfa, #ccfbf1) !important;
+}
+
+.card-orange {
+    background:
+        linear-gradient(135deg, #fffbeb, #fef3c7) !important;
+}
+
+.card-pink {
+    background:
+        linear-gradient(135deg, #f0fdfa, #d5f5ee) !important;
+}
+
+.card-cyan {
+    background:
+        linear-gradient(135deg, #ecfeff, #dbeafe) !important;
+}
+
+/* Card titles */
+.card-title {
+    color: #134e4a !important;
+}
+
+/* Card description */
+.card-text {
+    color: #334155 !important;
+}
+
+/* Bottom SERVERHub box */
+.footer-box {
+    background:
+        linear-gradient(
+            100deg,
+            #134e4a,
+            #0f766e,
+            #14b8a6
+        ) !important;
+
+    color: white !important;
+}
+
+.footer-box,
+.footer-box * {
+    color: white !important;
+}
+
 /* =========================================================
    MAIN BACKGROUND
 ========================================================= */
