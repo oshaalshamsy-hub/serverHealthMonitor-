@@ -2229,6 +2229,72 @@ Overall Status:
 
         st.rerun()
 
+elif st.session_state.page == "📋 Detailed Project Implementation Plan":
+
+    st.markdown("## 📋 Detailed Project Implementation Plan")
+
+    st.write(
+        "This page shows the main implementation stages of the "
+        "ServerHealthMonitoring project."
+    )
+
+    implementation_plan = [
+        {
+            "Phase": "1. Planning",
+            "Task": "Identify project requirements",
+            "Details": "Define CPU, RAM, Disk, Network, Alerts, Reports and Admin Control."
+        },
+        {
+            "Phase": "2. Platform Selection",
+            "Task": "Choose development platforms",
+            "Details": "GitHub was used to store the project files and Streamlit was used to build and deploy the web application."
+        },
+        {
+            "Phase": "3. Project Setup",
+            "Task": "Create project files",
+            "Details": "Create app.py, requirements.txt and add the SERVERHub and company logos."
+        },
+        {
+            "Phase": "4. Application Development",
+            "Task": "Develop the application",
+            "Details": "Create Dashboard, System Info, CPU, RAM, Disk, Network, Processes, Alerts and Reports."
+        },
+        {
+            "Phase": "5. System Monitoring",
+            "Task": "Add monitoring functions",
+            "Details": "Use psutil to monitor CPU, RAM, Disk and system information."
+        },
+        {
+            "Phase": "6. Interface Design",
+            "Task": "Design the user interface",
+            "Details": "Add sidebar navigation, logos, cards, buttons and custom colors."
+        },
+        {
+            "Phase": "7. Admin Control",
+            "Task": "Add administrator access",
+            "Details": "Protect Admin Control so only the program manager can access the settings."
+        },
+        {
+            "Phase": "8. Testing",
+            "Task": "Test all application features",
+            "Details": "Test navigation, monitoring data, alerts, reports and admin access."
+        },
+        {
+            "Phase": "9. Deployment",
+            "Task": "Publish the application",
+            "Details": "Connect the GitHub repository to Streamlit Community Cloud and deploy app.py."
+        },
+        {
+            "Phase": "10. Final Review",
+            "Task": "Review the final application",
+            "Details": "Fix design issues and confirm all features work correctly."
+        }
+    ]
+
+    st.dataframe(
+        implementation_plan,
+        use_container_width=True
+    )
 
 # =========================================================
 # ADMIN CONTROL
