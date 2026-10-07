@@ -33,7 +33,7 @@ pages = [
     "📋 Processes",
     "💻 Operating Systems",
     "⚠️ Alerts",
-    "📄 Reports"
+    "📄 Reports",
     "📋 Detailed Project Implementation Plan"
 ]
 
