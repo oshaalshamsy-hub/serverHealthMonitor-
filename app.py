@@ -2230,7 +2230,7 @@ elif st.session_state.page == "📋 Detailed Project Implementation Plan":
 # ADMIN CONTROL
 # =========================================================
 
-elif st.session_state.page == "🛠️ Admin Control":
+elif st.session_state.page == "🔐 Admin Login":
  if st.session_state.page == "🔐 Admin Login":
 
     st.markdown("## 🔐 Admin Login")
