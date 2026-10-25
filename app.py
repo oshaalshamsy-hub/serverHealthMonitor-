@@ -2231,7 +2231,7 @@ elif st.session_state.page == "📋 Detailed Project Implementation Plan":
 # =========================================================
 
 elif st.session_state.page == "🔐 Admin Login":
- 
+
     st.markdown("## 🔐 Admin Login")
 
     password = st.text_input(
@@ -2240,43 +2240,31 @@ elif st.session_state.page == "🔐 Admin Login":
     )
 
     if st.button("Login"):
-
-        if password == "1234":
+        if password == st.secrets["ADMIN_PASSWORD"]:
             st.session_state.admin_logged_in = True
             st.session_state.page = "🛠️ Admin Control"
             st.rerun()
-
         else:
             st.error("Wrong password")
 
+
 elif st.session_state.page == "🛠️ Admin Control":
 
-    if not st.session_state.admin_logged_in:
-        st.error("Access denied")
+    if not st.session_state.get("admin_logged_in", False):
         st.session_state.page = "🔐 Admin Login"
         st.rerun()
-        
-elif st.session_state.page == "🛠️ Admin Control":
 
-    hero(
-        "🛠️ Admin Control",
-        "Control your ServerHealthMonitoring settings."
-    )
+    else:
+        hero(
+            "🛠️ Admin Control",
+            "Control your ServerHealthMonitoring settings."
+        )
 
-
-elif st.session_state.page == "🛠️ Admin Control":
-
-    hero(
-        "🛠️ Admin Control",
-        "Control your ServerHealthMonitoring settings."
-    )
-
-
-    hero(
-        "🛠️ Admin Control",
-        "Control your ServerHealthMonitoring settings."
-    )
-
+        if st.button("🚪 Logout"):
+            st.session_state.admin_logged_in = False
+            st.session_state.page = "🔐 Admin Login"
+            st.rerun()
+            
 
     c1, c2 = (
         st.columns(2)
