@@ -997,21 +997,18 @@ st.sidebar.markdown(
 # NAVIGATION
 # ---------------------------------------------------------
 
+if st.session_state.page not in pages:
+    st.session_state.page = (
+        "🛠️ Admin Control"
+        if st.session_state.admin_logged_in
+        else "🔐 Admin Login"
+    )
+
 option = st.sidebar.radio(
     "Navigation",
     pages,
-    index=pages.index(
-        st.session_state.page
-    )
+    index=pages.index(st.session_state.page)
 )
-
-
-if option != st.session_state.page:
-
-    st.session_state.page = option
-
-    st.rerun()
-
 
 # ---------------------------------------------------------
 # COMPANY LOGO - BOTTOM
