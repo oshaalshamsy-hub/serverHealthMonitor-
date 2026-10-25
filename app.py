@@ -2231,8 +2231,7 @@ elif st.session_state.page == "📋 Detailed Project Implementation Plan":
 # =========================================================
 
 elif st.session_state.page == "🔐 Admin Login":
- if st.session_state.page == "🔐 Admin Login":
-
+ 
     st.markdown("## 🔐 Admin Login")
 
     password = st.text_input(
