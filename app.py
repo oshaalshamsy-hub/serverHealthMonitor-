@@ -2264,6 +2264,9 @@ elif st.session_state.page == "🛠️ Admin Control":
             st.session_state.admin_logged_in = False
             st.session_state.page = "🔐 Admin Login"
             st.rerun()
+
+
+    
             
 
     c1, c2 = (
