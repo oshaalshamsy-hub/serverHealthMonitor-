@@ -1011,6 +1011,13 @@ option = st.sidebar.radio(
     index=pages.index(st.session_state.page)
 )
 
+option = st.sidebar.radio(
+    "Navigation",
+    pages,
+    index=pages.index(st.session_state.page)
+)
+
+st.session_state.page = option
 # ---------------------------------------------------------
 # COMPANY LOGO - BOTTOM
 # ---------------------------------------------------------
