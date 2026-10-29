@@ -2461,3 +2461,34 @@ elif st.session_state.page.endswith("Network Security Plan"):
     ]
 
     st.dataframe(wan_plan, use_container_width=True)
+
+    st.markdown("### ☁️ Cloud Service Security Plan")
+
+    cloud_plan = [
+        {
+            "Security Control": "Strong Authentication",
+            "Purpose": "Protect cloud access using strong passwords and secure login."
+        },
+        {
+            "Security Control": "Multi-Factor Authentication (MFA)",
+            "Purpose": "Add an extra security step for cloud administrator access."
+        },
+        {
+            "Security Control": "Data Encryption",
+            "Purpose": "Protect data stored in the cloud and during transmission."
+        },
+        {
+            "Security Control": "Access Control",
+            "Purpose": "Allow only authorized users to access cloud services."
+        },
+        {
+            "Security Control": "Monitoring and Logging",
+            "Purpose": "Monitor cloud activity and detect unusual access or security problems."
+        },
+        {
+            "Security Control": "Backup and Recovery",
+            "Purpose": "Keep backups and support recovery if data is lost or damaged."
+        }
+    ]
+
+    st.dataframe(cloud_plan, use_container_width=True)
