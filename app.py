@@ -2408,7 +2408,7 @@ elif st.session_state.page == "🛠️ Admin Control":
         st.rerun()
 
 
-elif st.session_state.page == "🛡️ Network Security Plan":
+elif st.session_state.page.endswith("Network Security Plan"):
 
     st.markdown("## 🛡️ Network Security Plan")
 
