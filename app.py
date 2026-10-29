@@ -1008,13 +1008,8 @@ if st.session_state.page not in pages:
 option = st.sidebar.radio(
     "Navigation",
     pages,
-    index=pages.index(st.session_state.page)
-)
-
-option = st.sidebar.radio(
-    "Navigation",
-    pages,
-    index=pages.index(st.session_state.page)
+    index=pages.index(st.session_state.page),
+    key="main_navigation"
 )
 
 st.session_state.page = option
