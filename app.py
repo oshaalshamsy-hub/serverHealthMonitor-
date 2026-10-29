@@ -2492,3 +2492,37 @@ elif st.session_state.page.endswith("Network Security Plan"):
     ]
 
     st.dataframe(cloud_plan, use_container_width=True)
+
+st.markdown("### 🔧 Hardware Network Troubleshooting")
+
+hardware_troubleshooting = [
+    {
+        "Group Member": "Aysha",
+        "Problem": "Network cable issue",
+        "Troubleshooting": "Checked and reconnected the Ethernet cable.",
+        "Result": "Network connection restored."
+    },
+    {
+        "Group Member": "Fajer",
+        "Problem": "Switch port issue",
+        "Troubleshooting": "Checked the switch port and tested another working port.",
+        "Result": "Device connected successfully."
+    },
+    {
+        "Group Member": "Marim",
+        "Problem": "Network adapter issue",
+        "Troubleshooting": "Checked the network adapter status and connection.",
+        "Result": "Network access restored."
+    },
+    {
+        "Group Member": "Taif",
+        "Problem": "Router connection issue",
+        "Troubleshooting": "Checked router power, cables and interfaces.",
+        "Result": "Communication restored."
+    }
+]
+
+st.dataframe(
+    hardware_troubleshooting,
+    use_container_width=True
+)
