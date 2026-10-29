@@ -35,6 +35,7 @@ pages = [
     "⚠️ Alerts",
     "📄 Reports",
     "📋 Detailed Project Implementation Plan"
+    "🛡️ Network Security Plan"
 ]
 
 if st.session_state.admin_logged_in:
@@ -2403,3 +2404,58 @@ elif st.session_state.page == "🛠️ Admin Control":
         )
 
         st.rerun()
+
+
+elif st.session_state.page == "🛡️ Network Security Plan":
+
+    st.markdown("## 🛡️ Network Security Plan")
+
+    st.write(
+        "This page shows a basic security plan for VLAN and WAN networks."
+    )
+
+    st.markdown("### VLAN Security Plan")
+
+    vlan_plan = [
+        {
+            "Security Control": "VLAN Segmentation",
+            "Purpose": "Separate departments and reduce unnecessary traffic."
+        },
+        {
+            "Security Control": "Access Control Lists (ACLs)",
+            "Purpose": "Control which VLANs can communicate."
+        },
+        {
+            "Security Control": "Port Security",
+            "Purpose": "Prevent unauthorized devices from connecting."
+        },
+        {
+            "Security Control": "Disable Unused Ports",
+            "Purpose": "Reduce unauthorized physical access."
+        }
+    ]
+
+    st.dataframe(vlan_plan, use_container_width=True)
+
+    st.markdown("### WAN Security Plan")
+
+    wan_plan = [
+        {
+            "Security Control": "Firewall",
+            "Purpose": "Filter incoming and outgoing WAN traffic."
+        },
+        {
+            "Security Control": "VPN",
+            "Purpose": "Create a secure encrypted connection between sites."
+        },
+        {
+            "Security Control": "Encryption",
+            "Purpose": "Protect data while it travels across the WAN."
+        },
+        {
+            "Security Control": "Monitoring and Logging",
+            "Purpose": "Detect unusual activity and security problems."
+        }
+    ]
+
+    st.dataframe(wan_plan, use_container_width=True)
